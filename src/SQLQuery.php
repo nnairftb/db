@@ -36,6 +36,7 @@ abstract class SQLQuery extends DBQuery {
 	protected $where_values = [];
 	protected $unions = [];
 	protected $delayed = false;
+	protected $low_priority = false;
 	protected $tick;
 	protected $result;
 	protected $return_id = false;
@@ -605,6 +606,11 @@ abstract class SQLQuery extends DBQuery {
 		$this->delayed = true;
 		return $this;
 	}
+	
+	public function low_priority() {
+		$this->low_priority = true;
+		return $this;
+	}
 
 	/**
 	 * Executes a batch insert to the selected table based on data provided in an
@@ -871,6 +877,8 @@ abstract class SQLQuery extends DBQuery {
 
 		if ($this->delayed) {
 			$sql .= " DELAYED";
+		} else if($this->low_priority) {
+			$sql .= " LOW_PRIORITY";
 		}
 		$sql .= " INTO {$this->table_escaped} ({$keys}) VALUES ({$list})";
 
@@ -914,7 +922,14 @@ abstract class SQLQuery extends DBQuery {
 		if (!$this->update) {
 			return '';
 		}
-		$sql = "UPDATE {$this->table_escaped} SET {$this->update}";
+		
+		$sql = "UPDATE";
+		
+		if ($this->low_priority) {
+			$sql .= " LOW_PRIORITY";
+		}
+		
+		$sql .= " {$this->table_escaped} SET {$this->update}";
 		if ($this->where) {
 			$sql .= " WHERE {$this->where}";
 		}
