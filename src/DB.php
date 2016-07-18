@@ -246,6 +246,7 @@ class DB {
 	 */
 	public static function getPDO($db = '', $access = 'read') {
 		$db = $db === '' ? self::$config['default'] : $db;
+		$port = self::$config["connections"][$db]["port"]?: 3306;
 		// Enforce that write connection be used if read preference is master only
 		$read_preference = self::getReadPreference($db);
 		if ($read_preference === self::READ_PREFERENCE_MASTER) {
@@ -263,14 +264,14 @@ class DB {
 				}
 			}
 		}
-		return self::_getPDO($db, $access);
+		return self::_getPDO($db, $access, $port);
 	}
 
-	private static function _getPDO($db, $access) {
+	private static function _getPDO($db, $access, $port = 3306) {
 		$db_config = DB::getDBConfig($db, $access);
 		$cache_key = $db_config['host'] . '|' . $db_config['database'];
 		if (!isset(self::$pdo_connections[$cache_key])) {
-			$pdo_url = "{$db_config['engine']}:host={$db_config['host']};dbname={$db_config['database']}";
+			$pdo_url = "{$db_config['engine']}:host={$db_config['host']};port={$port};dbname={$db_config['database']}";
 			try {
 				self::$pdo_connections[$cache_key] = new PDO($pdo_url, $db_config['username'], $db_config['password']);
 			} catch (PDOException $e) {
